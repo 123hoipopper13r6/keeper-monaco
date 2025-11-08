@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Keeper</title>
+  <style type="text/css">
+    :root {
+      --url: url("");
+      --bg: #141414;
+      --tabbar: #141414;
+      --tab: #1a1a1a;
+      --tab-hover: #222222;
+      --tab-active: #1a1a1a;
+      --accent: #3b82f6;
+      --accent-glow: #3b82f655;
+      --border: #2a2a2a;
+      --text: #ffffff;
+      --text-dim: #b3b3b3;
+      --radius: 10px;
+      --transition: 0.25s ease;
+    }
+
+    html,
+    body {
+      border-top-left-radius: 10px;
+      border-bottom-left-radius: 10px;
+      border-bottom-right-radius: 10px;
+      background-color: var(--bg);
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      font-family: consolas, 'poppins', monospace;
+      color: white;
+    }
+
+    .tabs {
+      display: flex;
+      align-items: center;
+      background: var(--tabbar);
+      border-bottom: 1px solid var(--border);
+      height: 42px;
+      padding: 0 10px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      gap: 8px;
+    }
+
+    .tabs::-webkit-scrollbar {
+      display: none;
+    }
+
+    .tab {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: var(--radius);
+      background: var(--tab);
+      color: var(--text-dim);
+      cursor: pointer;
+      user-select: none;
+      transition: var(--transition);
+      position: relative;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+
+    .tab:hover {
+      background: var(--tab-hover);
+      color: var(--text);
+    }
+
+    .tab.active {
+      background: var(--tab-active);
+      color: var(--text);
+      box-shadow: 0 0 0 1px var(--border);
+    }
+
+    .tab .close {
+      margin-left: 6px;
+      font-size: 14px;
+      color: #888;
+      transition: var(--transition);
+    }
+
+    .tab .close:hover {
+      color: #ff5e5e;
+      transform: scale(1.1);
+    }
+
+    .add-tab {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius);
+      font-size: 20px;
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: var(--transition);
+      flex-shrink: 0;
+    }
+
+    .add-tab:hover {
+      background: var(--tab-hover);
+      color: var(--text);
+    }
+
+    .rename-input {
+      position: absolute;
+      background: #1a1a1a;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 13px;
+      padding: 2px 6px;
+      outline: none;
+      width: 160px;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 10;
+    }
+
+    #container {
+      width: 100%;
+      height: calc(100% - 42px);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="tabs" id="tabs">
+    <div class="add-tab" id="addTab">+</div>
+  </div>
+  <div id="container"></div>
+
+  <script>
+    window.MonacoEnvironment = {
+      getWorkerUrl: function (workerId, label) {
+        return `data:text/javascript;charset=utf-8,${encodeURIComponent(`
+          self.MonacoEnvironment = { baseUrl: 'file:///' };
+          importScripts('vs/base/worker/workerMain.js');
+        `)}`;
+      }
+    };
+  </script>
+
+  <script src="vs/loader.js"></script>
+  <script type="text/javascript">
+    require.config({ paths: { 'vs': 'vs' } });
+    var editor;
+    const _0x4d2c = [
+      { l: 'print()', i: 'print()', d: 'print(...) - Output values to console', m: 'Prints values to the output console.' },
+      { l: 'warn()', i: 'warn()', d: 'warn(...) - Output warning to console', m: 'Prints warning messages to the console.' },
+      { l: 'error()', i: 'error()', d: 'error(message, level) - Raise an error', m: 'Raises an error with the specified message.' },
+      { l: 'assert()', i: 'assert()', d: 'assert(condition, message) - Assert condition', m: 'Raises an error if condition is false/nil.' },
+      { l: 'typeof()', i: 'typeof()', d: 'typeof(value) - Get type of value', m: 'Returns the type of the value as a string.' },
+      { l: 'math.abs()', i: 'math.abs()', d: 'math.abs(x) - Absolute value', m: 'Returns the absolute value of x.' },
+      { l: 'math.floor()', i: 'math.floor()', d: 'math.floor(x) - Round down', m: 'Returns the largest integer less than or equal to x.' },
+      { l: 'math.ceil()', i: 'math.ceil()', d: 'math.ceil(x) - Round up', m: 'Returns the smallest integer greater than or equal to x.' },
+      { l: 'math.random()', i: 'math.random()', d: 'math.random(min, max) - Random number', m: 'Returns a random number between min and max.' },
+      { l: 'math.sqrt()', i: 'math.sqrt()', d: 'math.sqrt(x) - Square root', m: 'Returns the square root of x.' },
+      { l: 'math.sin()', i: 'math.sin()', d: 'math.sin(x) - Sine', m: 'Returns the sine of x (radians).' },
+      { l: 'math.cos()', i: 'math.cos()', d: 'math.cos(x) - Cosine', m: 'Returns the cosine of x (radians).' },
+      { l: 'math.tan()', i: 'math.tan()', d: 'math.tan(x) - Tangent', m: 'Returns the tangent of x (radians).' },
+      { l: 'math.log()', i: 'math.log()', d: 'math.log(x) - Natural logarithm', m: 'Returns the natural logarithm of x.' },
+      { l: 'math.exp()', i: 'math.exp()', d: 'math.exp(x) - Exponential', m: 'Returns e raised to the power x.' },
+      { l: 'math.pi', i: 'math.pi', d: 'math.pi - Pi constant', m: 'The mathematical constant pi.' },
+      { l: 'string.sub()', i: 'string.sub()', d: 'string.sub(s, i, j) - Substring', m: 'Returns a substring from start to end indices.' },
+      { l: 'string.lower()', i: 'string.lower()', d: 'string.lower(s) - Convert to lowercase', m: 'Converts string to lowercase.' },
+      { l: 'string.upper()', i: 'string.upper()', d: 'string.upper(s) - Convert to uppercase', m: 'Converts string to uppercase.' },
+      { l: 'string.len()', i: 'string.len()', d: 'string.len(s) - String length', m: 'Returns the length of the string.' },
+      { l: 'string.find()', i: 'string.find()', d: 'string.find(s, pattern, init, plain) - Find pattern', m: 'Finds first occurrence of pattern in string.' },
+      { l: 'string.gsub()', i: 'string.gsub()', d: 'string.gsub(s, pattern, repl, n) - Global substitution', m: 'Replaces all occurrences of pattern with replacement.' },
+      { l: 'string.match()', i: 'string.match()', d: 'string.match(s, pattern, init) - Match pattern', m: 'Matches pattern in string and returns captures.' },
+      { l: 'string.reverse()', i: 'string.reverse()', d: 'string.reverse(s) - Reverse string', m: 'Returns reversed string.' },
+      { l: 'string.rep()', i: 'string.rep()', d: 'string.rep(s, n) - Repeat string', m: 'Returns string repeated n times.' },
+      { l: 'string.char()', i: 'string.char()', d: 'string.char(...) - Character from code', m: 'Returns string of characters from ASCII codes.' },
+      { l: 'string.byte()', i: 'string.byte()', d: 'string.byte(s, pos) - Byte value', m: 'Returns ASCII code of character at position.' },
+      { l: 'string.format()', i: 'string.format()', d: 'string.format(format, ...) - Format string', m: 'Returns formatted string (like printf).' },
+      { l: 'table.insert()', i: 'table.insert()', d: 'table.insert(t, value) - Insert value', m: 'Inserts value at end of table.' },
+      { l: 'table.remove()', i: 'table.remove()', d: 'table.remove(t, pos) - Remove value', m: 'Removes value from table at position.' },
+      { l: 'table.concat()', i: 'table.concat()', d: 'table.concat(t, sep, i, j) - Concatenate', m: 'Concatenates table elements with separator.' },
+      { l: 'table.sort()', i: 'table.sort()', d: 'table.sort(t, comp) - Sort table', m: 'Sorts table elements in place.' },
+      { l: 'table.find()', i: 'table.find()', d: 'table.find(t, value, init) - Find value', m: 'Finds value in table and returns index.' },
+      { l: 'table.create()', i: 'table.create()', d: 'table.create(count, value) - Create table', m: 'Creates table with count elements set to value.' },
+      { l: 'table.clone()', i: 'table.clone()', d: 'table.clone(t) - Clone table', m: 'Returns shallow copy of table.' },
+      { l: 'table.clear()', i: 'table.clear()', d: 'table.clear(t) - Clear table', m: 'Removes all elements from table.' },
+      { l: 'wait()', i: 'wait()', d: 'wait(seconds) - Yield for time', m: 'Yields execution for specified seconds.' },
+      { l: 'spawn()', i: 'spawn(function()\n\t\nend)', d: 'spawn(func) - Run in new thread', m: 'Runs function in new coroutine.' },
+      { l: 'delay()', i: 'delay()', d: 'delay(time, func) - Delay execution', m: 'Runs function after delay.' },
+      { l: 'tick()', i: 'tick()', d: 'tick() - Get current time', m: 'Returns current time in seconds.' },
+      { l: 'elapsedTime()', i: 'elapsedTime()', d: 'elapsedTime() - Time since start', m: 'Returns time since script started.' },
+      { l: 'os.time()', i: 'os.time()', d: 'os.time() - Current time', m: 'Returns current Unix timestamp.' },
+      { l: 'os.date()', i: 'os.date()', d: 'os.date(format, time) - Format date', m: 'Returns formatted date string.' },
+      { l: 'rconsoleprint()', i: 'rconsoleprint()', d: 'rconsoleprint(message) - Print to console', m: 'Prints to executor console (Usually krnl specific).' },
+      { l: 'rconsolewarn()', i: 'rconsolewarn()', d: 'rconsolewarn(message) - Warn to console', m: 'Prints warning to executor console (Usually krnl specific).' },
+      { l: 'rconsoleerr()', i: 'rconsoleerr()', d: 'rconsoleerr(message) - Error to console', m: 'Prints error to executor console (Usually krnl specific).' },
+      { l: 'rconsoleinfo()', i: 'rconsoleinfo()', d: 'rconsoleinfo(message) - Info to console', m: 'Prints info to executor console (Usually krnl specific).' },
+      { l: 'printconsole()', i: 'printconsole()', d: 'printconsole(message) - Print to console', m: 'Alternative console print function (Usually krnl specific).' },
+      { l: 'for loop', i: 'for i = 1, 10 do\n\t\nend', d: 'Numeric for loop', m: 'Numeric for loop from start to end.' },
+      { l: 'for pairs', i: 'for k, v in pairs(table) do\n\t\nend', d: 'Generic for loop with pairs', m: 'Iterates over all key-value pairs in table.' },
+      { l: 'for ipairs', i: 'for i, v in ipairs(table) do\n\t\nend', d: 'Generic for loop with ipairs', m: 'Iterates over sequential array part of table.' },
+      { l: 'while loop', i: 'while true do\n\t\nend', d: 'While loop', m: 'Repeats block while condition is true.' },
+      { l: 'repeat until', i: 'repeat\n\t\nuntil true', d: 'Repeat until loop', m: 'Repeats block until condition is true.' },
+      { l: 'if statement', i: 'if  then\n\t\nend', d: 'If statement', m: 'Conditional execution block.' },
+      { l: 'if else', i: 'if  then\n\t\nelse\n\t\nend', d: 'If-else statement', m: 'Conditional execution with else branch.' },
+      { l: 'function', i: 'function name()\n\t\nend', d: 'Function definition', m: 'Defines a new function.' },
+      { l: 'local function', i: 'local function name()\n\t\nend', d: 'Local function definition', m: 'Defines a local function.' },
+      { l: 'anonymous function', i: 'function()\n\t\nend', d: 'Anonymous function', m: 'Defines an anonymous function.' },
+      { l: 'local', i: 'local', d: 'Local variable declaration', m: 'Declares a local variable.' },
+      { l: 'return', i: 'return ', d: 'Return statement', m: 'Returns value from function.' },
+      { l: 'break', i: 'break', d: 'Break statement', m: 'Exits loop immediately.' },
+      { l: 'and', i: 'and', d: 'Logical AND', m: 'Logical AND operator.' },
+      { l: 'or', i: 'or', d: 'Logical OR', m: 'Logical OR operator.' },
+      { l: 'not', i: 'not', d: 'Logical NOT', m: 'Logical NOT operator.' },
+      { l: 'true', i: 'true', d: 'Boolean true', m: 'Boolean true value.' },
+      { l: 'false', i: 'false', d: 'Boolean false', m: 'Boolean false value.' },
+      { l: 'nil', i: 'nil', d: 'Nil value', m: 'Represents absence of value.' },
+      { l: 'end', i: 'end', d: 'End block', m: 'Ends a block statement.' },
+      { l: 'then', i: 'then', d: 'Then keyword', m: 'Used in if statements.' },
+      { l: 'do', i: 'do', d: 'Do keyword', m: 'Starts a block statement.' },
+      { l: 'in', i: 'in', d: 'In keyword', m: 'Used in for loops.' },
+      { l: 'require()', i: 'require()', d: 'require(module) - Load module', m: 'Loads and returns the specified module.' },
+      { l: 'getfenv()', i: 'getfenv()', d: 'getfenv(func) - Get function environment', m: 'Returns environment of function.' },
+      { l: 'setfenv()', i: 'setfenv()', d: 'setfenv(func, env) - Set function environment', m: 'Sets environment of function.' },
+      { l: 'getmetatable()', i: 'getmetatable()', d: 'getmetatable(object) - Get metatable', m: 'Returns metatable of object.' },
+      { l: 'setmetatable()', i: 'setmetatable()', d: 'setmetatable(object, mt) - Set metatable', m: 'Sets metatable of object.' },
+      { l: 'rawget()', i: 'rawget()', d: 'rawget(table, key) - Raw table get', m: 'Gets table value without metamethods.' },
+      { l: 'rawset()', i: 'rawset()', d: 'rawset(table, key, value) - Raw table set', m: 'Sets table value without metamethods.' },
+      { l: 'coroutine.create()', i: 'coroutine.create()', d: 'coroutine.create(func) - Create coroutine', m: 'Creates new coroutine from function.' },
+      { l: 'coroutine.resume()', i: 'coroutine.resume()', d: 'coroutine.resume(co, ...) - Resume coroutine', m: 'Starts or continues coroutine execution.' },
+      { l: 'coroutine.yield()', i: 'coroutine.yield()', d: 'coroutine.yield(...) - Yield coroutine', m: 'Suspends coroutine execution.' },
+      { l: 'coroutine.status()', i: 'coroutine.status()', d: 'coroutine.status(co) - Coroutine status', m: 'Returns status of coroutine.' },
+      { l: 'bit32.band()', i: 'bit32.band()', d: 'bit32.band(a, b) - Bitwise AND', m: 'Returns bitwise AND of arguments.' },
+      { l: 'bit32.bor()', i: 'bit32.bor()', d: 'bit32.bor(a, b) - Bitwise OR', m: 'Returns bitwise OR of arguments.' },
+      { l: 'bit32.bxor()', i: 'bit32.bxor()', d: 'bit32.bxor(a, b) - Bitwise XOR', m: 'Returns bitwise XOR of arguments.' },
+      { l: 'bit32.bnot()', i: 'bit32.bnot()', d: 'bit32.bnot(a) - Bitwise NOT', m: 'Returns bitwise NOT of argument.' },
+      { l: 'debug.traceback()', i: 'debug.traceback()', d: 'debug.traceback(message) - Stack trace', m: 'Returns stack trace string.' },
+      { l: 'debug.info()', i: 'debug.info()', d: 'debug.info(func) - Function info', m: 'Returns information about function.' },
+    ];
+
+    const tabsEl = document.getElementById("tabs");
+    const addTabBtn = document.getElementById("addTab");
+    let tabs = [], activeTab = null, counter = 1;
+
+    // Global flag to track editor readiness
+    window.editorReady = false;
+    window.editorInitialized = false;
+
+    function _0x1a2b(_0x3c4d = `script${counter++}.luau`, _0x5e6f = "print('Hello World')") {
+      const _0x7a8b = Date.now().toString();
+      let _0x9c0a = null;
+      if (typeof monaco !== 'undefined' && editor) {
+        _0x9c0a = monaco.editor.createModel(_0x5e6f, 'lua');
+      }
+      tabs.push({ id: _0x7a8b, title: _0x3c4d, content: _0x5e6f, model: _0x9c0a });
+      _0x4e5d();
+      _0x6f7g(_0x7a8b);
+      return _0x7a8b;
+    }
+
+    function _0x2b3c(_0x8d9e) {
+      const _0xa1b2 = tabs.findIndex(t => t.id === _0x8d9e);
+      if (_0xa1b2 === -1) return;
+      const _0xc3d4 = tabs[_0xa1b2];
+
+      if (_0xc3d4.model && _0xc3d4.model.dispose) {
+        if (editor && editor.getModel() === _0xc3d4.model) {
+          const _0xe5f6 = tabs.find((t, i) => i !== _0xa1b2);
+          if (_0xe5f6) {
+            _0x6f7g(_0xe5f6.id);
+          } else {
+            editor.setModel(null);
+          }
+        }
+        _0xc3d4.model.dispose();
+      }
+
+      tabs.splice(_0xa1b2, 1);
+      if (activeTab === _0x8d9e) {
+        if (tabs.length) {
+          _0x6f7g(tabs[Math.max(0, _0xa1b2 - 1)].id);
+        } else {
+          activeTab = null;
+          if (editor) editor.setValue("");
+        }
+      }
+      _0x4e5d();
+    }
+
+    function _0x4e5d() {
+      tabsEl.querySelectorAll(".tab").forEach(t => t.remove());
+      tabs.forEach(tab => {
+        const _0xf7g8 = document.createElement("div");
+        _0xf7g8.className = "tab" + (tab.id === activeTab ? " active" : "");
+        _0xf7g8.innerHTML = `<span>${tab.title}</span><span class="close">×</span>`;
+        _0xf7g8.querySelector('.close').onclick = e => { e.stopPropagation(); _0x2b3c(tab.id); };
+        _0xf7g8.onclick = () => _0x6f7g(tab.id);
+        tabsEl.insertBefore(_0xf7g8, addTabBtn);
+      });
+    }
+
+    function _0x6f7g(_0x8d9e) {
+      if (activeTab === _0x8d9e) return;
+      activeTab = _0x8d9e;
+      
+      if (editor && typeof monaco !== 'undefined') {
+        const _0xc3d4 = tabs.find(t => t.id === _0x8d9e);
+        if (!_0xc3d4) return;
+        
+        if (!_0xc3d4.model) {
+          _0xc3d4.model = monaco.editor.createModel(_0xc3d4.content || "", 'lua');
+        }
+        editor.setModel(_0xc3d4.model);
+      }
+      _0x4e5d();
+    }
+
+    addTabBtn.onclick = () => _0x1a2b(`script${counter++}.luau`, "print('Hello World')");
+
+    require(['vs/editor/editor.main'], function () {
+      monaco.editor.defineTheme('KeeperTheme', {
+        base: 'vs-dark',
+        inherit: true,
+        rules: [
+          { token: "keyword", foreground: "dcdcaa" },
+          { token: "string", foreground: "ce9178" },
+          { token: "number", foreground: "b5cea8" },
+          { token: "comment", foreground: "6a9955", fontStyle: "italic" },
+          { token: "function", foreground: "dcdcaa" },
+          { token: "variable", foreground: "9cdcfe" },
+          { token: "type", foreground: "4ec9b0" },
+          { token: "operator", foreground: "d4d4d4" },
+          { token: "delimiter", foreground: "d4d4d4" },
+          { token: "tag", foreground: "569cd6" },
+        ],
+        colors: {
+          'editor.background': '#141414',
+          'editor.foreground': '#ffffff',
+          'editorSuggestWidget.background': '#1a1a1a',
+          'editorSuggestWidget.foreground': '#ffffff',
+          'editorSuggestWidget.selectedBackground': '#2a2a2a',
+          'editorSuggestWidget.highlightForeground': '#dcdcaa',
+          'list.hoverBackground': '#2a2a2a',
+          'list.highlightForeground': '#dcdcaa',
+        }
+      });
+
+      monaco.languages.registerCompletionItemProvider('lua', {
+        provideCompletionItems: function(model, position) {
+          const _0x1a2b = model.getWordUntilPosition(position);
+          const _0x2b3c = {
+            startLineNumber: position.lineNumber,
+            endLineNumber: position.lineNumber,
+            startColumn: _0x1a2b.startColumn,
+            endColumn: _0x1a2b.endColumn
+          };
+
+          const _0x4e5d = model.getWordAtPosition(position);
+          const _0x6f7g = _0x4e5d ? _0x4e5d.word.toLowerCase() : '';
+          
+          const _0x8d9e = _0x4d2c.filter(_0xa1b2 => 
+            _0xa1b2.l.toLowerCase().includes(_0x6f7g)
+          );
+
+          const _0xc3d4 = _0x8d9e.map(_0xe5f6 => ({
+            label: _0xe5f6.l,
+            kind: monaco.languages.CompletionItemKind.Function,
+            detail: _0xe5f6.d,
+            documentation: _0xe5f6.m ? { value: _0xe5f6.m } : undefined,
+            insertText: _0xe5f6.i,
+            range: _0x2b3c
+          }));
+
+          return _0xc3d4;
+        },
+        
+        triggerCharacters: ['.', ':', '"', "'", '(']
+      });
+
+      editor = monaco.editor.create(document.getElementById('container'), {
+        value: "print('Keeper.')",
+        language: 'lua',
+        theme: 'KeeperTheme',
+        minimap: { enabled: false },
+        fontSize: 14,
+        fontFamily: "Consolas, 'Cascadia Code', 'Fira Code', monospace",
+        lineNumbers: 'on',
+        roundedSelection: true,
+        scrollBeyondLastLine: false,
+        automaticLayout: true,
+        suggestOnTriggerCharacters: true,
+        quickSuggestions: true,
+        parameterHints: { enabled: true },
+        wordBasedSuggestions: true,
+        occurrencesHighlight: true,
+        renderLineHighlight: 'all',
+        cursorBlinking: 'smooth',
+        folding: true,
+      });
+
+      _0x1a2b("printidentify.luau", "printidentify() -- should be '8' in roblox'es console(F9) or /console in the chat.");
+      _0x1a2b("identifyexecutor.luau", "identifyexecutor()");
+      _0x1a2b("main.luau", "print('Keeper')");
+
+      window.addEventListener('resize', () => {
+        if (editor) editor.layout();
+      });
+
+      // Enhanced GetText function with multiple fallbacks
+      window.GetText = function() {
+        try {
+          if (editor && editor.getValue) {
+            return editor.getValue();
+          }
+          if (window.activeTab && window.tabs) {
+            const activeTabData = window.tabs.find(t => t.id === window.activeTab);
+            if (activeTabData && activeTabData.model && activeTabData.model.getValue) {
+              return activeTabData.model.getValue();
+            }
+          }
+          return "print('Editor not ready')";
+        } catch (e) {
+          return "print('Error: ' .. tostring(" + JSON.stringify(e.message) + "))";
+        }
+      };
+
+      window.SetText = function(text) {
+        if (editor && editor.setValue) {
+          editor.setValue(text);
+          return true;
+        }
+        return false;
+      };
+
+      window.AddSuggestion = function(label, insertText, detail, documentation) {
+        _0x4d2c.push({
+          l: label,
+          i: insertText,
+          d: detail,
+          m: documentation
+        });
+      };
+
+      // Enhanced content getter with multiple access methods
+      window.getEditorContent = function() {
+        return window.GetText();
+      };
+
+      window.getActiveTabContent = function() {
+        if (!activeTab) return '';
+        const tab = tabs.find(t => t.id === activeTab);
+        if (tab && tab.model) {
+          return tab.model.getValue();
+        }
+        return '';
+      };
+
+      // Set ready flags
+      window.editorReady = true;
+      window.editorInitialized = true;
+      
+      // Dispatch event for external systems to know editor is ready
+      window.dispatchEvent(new Event('editorReady'));
+      
+      console.log('Monaco Editor initialized and ready');
+    });
+
+    // Fallback initialization check
+    setTimeout(() => {
+      if (!window.editorReady) {
+        console.warn('Editor initialization timeout - setting fallback functions');
+        window.GetText = function() { return "print('Editor loading...')"; };
+        window.SetText = function(text) { return false; };
+        window.getEditorContent = function() { return "print('Editor loading...')"; };
+      }
+    }, 5000);
+  </script>
+</body>
+</html>

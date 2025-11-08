@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Keeper</title>
+    <link href="https://fonts.googleapis.com/css2?family=Lilita+One&display=swap" rel="stylesheet">
+    <style type="text/css">
+        :root {
+            --url: url("");
+            --bg: #141414;
+            --tabbar: #141414;
+            --tab: #1a1a1a;
+            --tab-hover: #222222;
+            --tab-active: #1a1a1a;
+            --accent: #3b82f6;
+            --accent-glow: #3b82f655;
+            --border: #2a2a2a;
+            --text: #ffffff;
+            --text-dim: #b3b3b3;
+            --radius: 10px;
+            --transition: 0.25s ease;
+        }
+
+        html, body {
+            border-top-left-radius: 10px;
+            border-bottom-left-radius: 10px;
+            border-bottom-right-radius: 10px;
+            background-color: var(--bg);
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: consolas, 'poppins', monospace;
+            color: white;
+        }
+
+        .tabs {
+            display: flex;
+            align-items: center;
+            background: var(--tabbar);
+            border-bottom: 1px solid var(--border);
+            height: 42px;
+            padding: 0 10px;
+            overflow-x: auto;
+            scrollbar-width: none;
+            gap: 8px;
+            position: relative;
+            cursor: grab;
+        }
+
+        .tabs::-webkit-scrollbar {
+            display: none;
+        }
+
+        .tabs:active {
+            cursor: grabbing;
+        }
+
+        .tab {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            border-radius: var(--radius);
+            background: var(--tab);
+            color: var(--text-dim);
+            cursor: pointer;
+            user-select: none;
+            transition: var(--transition);
+            position: relative;
+            flex-shrink: 0;
+            white-space: nowrap;
+            min-width: 120px;
+            max-width: 200px;
+        }
+
+        .tab:hover {
+            background: var(--tab-hover);
+            color: var(--text);
+        }
+
+        .tab.active {
+            background: var(--tab-active);
+            color: var(--text);
+            box-shadow: 0 0 0 1px var(--border);
+        }
+
+        .tab .close {
+            margin-left: 6px;
+            font-size: 14px;
+            color: #888;
+            transition: var(--transition);
+            padding: 2px;
+            border-radius: 3px;
+        }
+
+        .tab .close:hover {
+            color: #ff5e5e;
+            background: rgba(255, 94, 94, 0.1);
+        }
+
+        .add-tab {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius);
+            font-size: 20px;
+            color: var(--text-dim);
+            cursor: pointer;
+            transition: var(--transition);
+            flex-shrink: 0;
+        }
+
+        .add-tab:hover {
+            background: var(--tab-hover);
+            color: var(--text);
+        }
+
+        .rename-input {
+            position: absolute;
+            background: #1a1a1a;
+            border: 1px solid var(--accent);
+            border-radius: 6px;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 13px;
+            padding: 4px 8px;
+            outline: none;
+            width: 160px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+        }
+
+        #container {
+            width: 100%;
+            height: calc(100% - 42px);
+        }
+
+        /* Character animation for newly typed/deleted characters */
+        .char-animation {
+            animation: charPopIn 0.15s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            display: inline-block;
+        }
+
+        @keyframes charPopIn {
+            0% { 
+                opacity: 0;
+                transform: scale(0.8) translateY(2px);
+            }
+            100% { 
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .char-delete-animation {
+            animation: charPopOut 0.12s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            display: inline-block;
+        }
+
+        @keyframes charPopOut {
+            0% { 
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+            100% { 
+                opacity: 0;
+                transform: scale(0.7) translateY(-2px);
+            }
+        }
+
+        /* Cursor animation */
+        .monaco-editor .cursors-layer .cursor {
+            transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            animation: cursorPulse 1.2s ease-in-out infinite;
+        }
+
+        @keyframes cursorPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        /* Suggestion widget animations */
+        .monaco-editor .suggest-widget {
+            animation: suggestSlideIn 0.18s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+
+        @keyframes suggestSlideIn {
+            0% {
+                opacity: 0;
+                transform: translateY(-10px) scale(0.95);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .monaco-editor .suggest-widget .monaco-list-row {
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+
+        .monaco-editor .suggest-widget .monaco-list-row:hover {
+            transform: translateX(5px);
+            background: var(--accent-glow) !important;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="tabs" id="tabs">
+        <div class="add-tab" id="addTab">+</div>
+    </div>
+    <div id="container"></div>
+
+    <script>
+        window.MonacoEnvironment = {
+            getWorkerUrl: function (workerId, label) {
+                return `data:text/javascript;charset=utf-8,${encodeURIComponent(`
+                    self.MonacoEnvironment = { baseUrl: 'file:///' };
+                    importScripts('vs/base/worker/workerMain.js');
+                `)}`;
+            }
+        };
+    </script>
+
+    <script src="vs/loader.js"></script>
+    <script type="text/javascript">
+        require.config({ paths: { 'vs': 'vs' } });
+        var editor;
+        
+        // Comprehensive Luau/Roblox API completions
+        const luauSuggestions = [
+            // Basic Lua functions
+            { label: 'print', kind: 1, documentation: 'Prints values to output', insertText: 'print(${1:value})' },
+            { label: 'warn', kind: 1, documentation: 'Prints warning message', insertText: 'warn(${1:message})' },
+            { label: 'error', kind: 1, documentation: 'Raises an error', insertText: 'error("${1:message}")' },
+            { label: 'type', kind: 1, documentation: 'Returns type of value', insertText: 'type(${1:value})' },
+            { label: 'assert', kind: 1, documentation: 'Asserts condition is true', insertText: 'assert(${1:condition}, "${2:message}")' },
+            
+            // Math library
+            { label: 'math.abs', kind: 1, documentation: 'Absolute value', insertText: 'math.abs(${1:x})' },
+            { label: 'math.floor', kind: 1, documentation: 'Round down', insertText: 'math.floor(${1:x})' },
+            { label: 'math.ceil', kind: 1, documentation: 'Round up', insertText: 'math.ceil(${1:x})' },
+            { label: 'math.random', kind: 1, documentation: 'Random number', insertText: 'math.random(${1:min}, ${2:max})' },
+            { label: 'math.sqrt', kind: 1, documentation: 'Square root', insertText: 'math.sqrt(${1:x})' },
+            { label: 'math.sin', kind: 1, documentation: 'Sine function', insertText: 'math.sin(${1:x})' },
+            { label: 'math.cos', kind: 1, documentation: 'Cosine function', insertText: 'math.cos(${1:x})' },
+            { label: 'math.tan', kind: 1, documentation: 'Tangent function', insertText: 'math.tan(${1:x})' },
+            { label: 'math.clamp', kind: 1, documentation: 'Clamp value between min and max', insertText: 'math.clamp(${1:x}, ${2:min}, ${3:max})' },
+            
+            // String library
+            { label: 'string.sub', kind: 1, documentation: 'Get substring', insertText: 'string.sub(${1:str}, ${2:start}, ${3:end})' },
+            { label: 'string.lower', kind: 1, documentation: 'Convert to lowercase', insertText: 'string.lower(${1:str})' },
+            { label: 'string.upper', kind: 1, documentation: 'Convert to uppercase', insertText: 'string.upper(${1:str})' },
+            { label: 'string.len', kind: 1, documentation: 'Get string length', insertText: 'string.len(${1:str})' },
+            { label: 'string.find', kind: 1, documentation: 'Find pattern in string', insertText: 'string.find(${1:str}, "${2:pattern}")' },
+            { label: 'string.gsub', kind: 1, documentation: 'Global string substitution', insertText: 'string.gsub(${1:str}, "${2:pattern}", "${3:replacement}")' },
+            { label: 'string.match', kind: 1, documentation: 'Match pattern in string', insertText: 'string.match(${1:str}, "${2:pattern}")' },
+            
+            // Table library
+            { label: 'table.insert', kind: 1, documentation: 'Insert value into table', insertText: 'table.insert(${1:table}, ${2:value})' },
+            { label: 'table.remove', kind: 1, documentation: 'Remove value from table', insertText: 'table.remove(${1:table}, ${2:position})' },
+            { label: 'table.concat', kind: 1, documentation: 'Concatenate table elements', insertText: 'table.concat(${1:table}, "${2:separator}")' },
+            { label: 'table.sort', kind: 1, documentation: 'Sort table elements', insertText: 'table.sort(${1:table})' },
+            { label: 'table.find', kind: 1, documentation: 'Find value in table', insertText: 'table.find(${1:table}, ${2:value})' },
+            { label: 'table.create', kind: 1, documentation: 'Create table with size', insertText: 'table.create(${1:size}, ${2:value})' },
+            { label: 'table.clone', kind: 1, documentation: 'Clone table', insertText: 'table.clone(${1:table})' },
+            
+            // Roblox-specific
+            { label: 'wait', kind: 1, documentation: 'Yield for seconds', insertText: 'wait(${1:seconds})' },
+            { label: 'spawn', kind: 1, documentation: 'Run function in new thread', insertText: 'spawn(function()\n\t${1:-- code}\nend)' },
+            { label: 'delay', kind: 1, documentation: 'Run function after delay', insertText: 'delay(${1:seconds}, function()\n\t${2:-- code}\nend)' },
+            { label: 'tick', kind: 1, documentation: 'Get current time', insertText: 'tick()' },
+            
+            // Instance methods
+            { label: 'Instance.new', kind: 1, documentation: 'Create new instance', insertText: 'Instance.new("${1:ClassName}")' },
+            { label: 'Clone', kind: 1, documentation: 'Clone instance', insertText: '${1:instance}:Clone()' },
+            { label: 'Destroy', kind: 1, documentation: 'Destroy instance', insertText: '${1:instance}:Destroy()' },
+            { label: 'FindFirstChild', kind: 1, documentation: 'Find child by name', insertText: '${1:instance}:FindFirstChild("${2:name}")' },
+            { label: 'GetChildren', kind: 1, documentation: 'Get all children', insertText: '${1:instance}:GetChildren()' },
+            { label: 'WaitForChild', kind: 1, documentation: 'Wait for child to exist', insertText: '${1:instance}:WaitForChild("${2:name}")' },
+            
+            // Vector3/CFrame
+            { label: 'Vector3.new', kind: 1, documentation: 'Create 3D vector', insertText: 'Vector3.new(${1:x}, ${2:y}, ${3:z})' },
+            { label: 'CFrame.new', kind: 1, documentation: 'Create coordinate frame', insertText: 'CFrame.new(${1:x}, ${2:y}, ${3:z})' },
+            { label: 'CFrame.Angles', kind: 1, documentation: 'Create rotated CFrame', insertText: 'CFrame.Angles(${1:rx}, ${2:ry}, ${3:rz})' },
+            
+            // Events
+            { label: 'Connect', kind: 1, documentation: 'Connect to event', insertText: '${1:event}:Connect(function(${2:param})\n\t${3:-- code}\nend)' },
+            { label: 'Wait', kind: 1, documentation: 'Wait for event', insertText: '${1:event}:Wait()' },
+            { label: 'Fire', kind: 1, documentation: 'Fire event', insertText: '${1:event}:Fire(${2:args})' },
+            
+            // Game services
+            { label: 'game.GetService', kind: 1, documentation: 'Get game service', insertText: 'game:GetService("${1:ServiceName}")' },
+            { label: 'game.Players', kind: 2, documentation: 'Players service', insertText: 'game.Players' },
+            { label: 'game.Workspace', kind: 2, documentation: 'Workspace service', insertText: 'game.Workspace' },
+            { label: 'game.Lighting', kind: 2, documentation: 'Lighting service', insertText: 'game.Lighting' },
+            
+            // Control structures
+            { label: 'for', kind: 14, documentation: 'Numeric for loop', insertText: 'for ${1:i} = ${2:1}, ${3:10} do\n\t${4:-- code}\nend' },
+            { label: 'for pairs', kind: 14, documentation: 'Iterate with pairs', insertText: 'for ${1:key}, ${2:value} in pairs(${3:table}) do\n\t${4:-- code}\nend' },
+            { label: 'for ipairs', kind: 14, documentation: 'Iterate with ipairs', insertText: 'for ${1:i}, ${2:value} in ipairs(${3:table}) do\n\t${4:-- code}\nend' },
+            { label: 'while', kind: 14, documentation: 'While loop', insertText: 'while ${1:condition} do\n\t${2:-- code}\nend' },
+            { label: 'if', kind: 14, documentation: 'If statement', insertText: 'if ${1:condition} then\n\t${2:-- code}\nend' },
+            { label: 'elseif', kind: 14, documentation: 'Elseif statement', insertText: 'elseif ${1:condition} then\n\t${2:-- code}' },
+            { label: 'else', kind: 14, documentation: 'Else statement', insertText: 'else\n\t${1:-- code}' },
+            { label: 'function', kind: 12, documentation: 'Function definition', insertText: 'function ${1:name}(${2:params})\n\t${3:-- code}\nend' },
+            { label: 'local function', kind: 12, documentation: 'Local function', insertText: 'local function ${1:name}(${2:params})\n\t${3:-- code}\nend' },
+            { label: 'local', kind: 6, documentation: 'Local variable', insertText: 'local ${1:variable} = ${2:value}' },
+            { label: 'return', kind: 6, documentation: 'Return statement', insertText: 'return ${1:value}' },
+            
+            // Common Roblox classes
+            { label: 'Part', kind: 7, documentation: 'Part class', insertText: 'Part' },
+            { label: 'Script', kind: 7, documentation: 'Script class', insertText: 'Script' },
+            { label: 'LocalScript', kind: 7, documentation: 'LocalScript class', insertText: 'LocalScript' },
+            { label: 'ModuleScript', kind: 7, documentation: 'ModuleScript class', insertText: 'ModuleScript' },
+            { label: 'Player', kind: 7, documentation: 'Player class', insertText: 'Player' },
+        ];
+
+        const tabsEl = document.getElementById("tabs");
+        const addTabBtn = document.getElementById("addTab");
+        let tabs = [], activeTab = null, counter = 1;
+        let usedNumbers = new Set();
+
+        // Mouse wheel scrolling for tabs
+        let isScrolling = false;
+        let startX;
+        let scrollLeft;
+
+        tabsEl.addEventListener('mousedown', (e) => {
+            if (e.target.classList.contains('tab') || e.target.classList.contains('close') || e.target.closest('.tab')) {
+                return;
+            }
+            isScrolling = true;
+            tabsEl.style.cursor = 'grabbing';
+            startX = e.pageX - tabsEl.offsetLeft;
+            scrollLeft = tabsEl.scrollLeft;
+        });
+
+        tabsEl.addEventListener('mouseleave', () => {
+            isScrolling = false;
+            tabsEl.style.cursor = 'grab';
+        });
+
+        tabsEl.addEventListener('mouseup', () => {
+            isScrolling = false;
+            tabsEl.style.cursor = 'grab';
+        });
+
+        tabsEl.addEventListener('mousemove', (e) => {
+            if (!isScrolling) return;
+            e.preventDefault();
+            const x = e.pageX - tabsEl.offsetLeft;
+            const walk = (x - startX) * 2;
+            tabsEl.scrollLeft = scrollLeft - walk;
+        });
+
+        tabsEl.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            tabsEl.scrollLeft += e.deltaY;
+        });
+
+        function getNextTabNumber() {
+            for (let i = 1; i <= 1000; i++) {
+                if (!usedNumbers.has(i)) {
+                    usedNumbers.add(i);
+                    return i;
+                }
+            }
+            return counter++;
+        }
+
+        function releaseTabNumber(number) {
+            usedNumbers.delete(number);
+        }
+
+        function createTab(title = null, content = "-- Welcome to Luau Editor\nprint('Hello World')") {
+            const id = Date.now().toString();
+            let tabNumber = getNextTabNumber();
+            let tabTitle = title || `script${tabNumber}.luau`;
+            
+            let model = null;
+            if (typeof monaco !== 'undefined' && editor) {
+                model = monaco.editor.createModel(content, 'lua');
+            }
+            tabs.push({ id, title: tabTitle, content, model, number: tabNumber });
+            renderTabs();
+            switchToTab(id);
+            return id;
+        }
+
+        function closeTab(tabId) {
+            const index = tabs.findIndex(t => t.id === tabId);
+            if (index === -1) return;
+            const tab = tabs[index];
+
+            releaseTabNumber(tab.number);
+
+            if (tab.model && tab.model.dispose) {
+                if (editor && editor.getModel() === tab.model) {
+                    const otherTab = tabs.find((t, i) => i !== index);
+                    if (otherTab) {
+                        switchToTab(otherTab.id);
+                    } else {
+                        editor.setModel(null);
+                    }
+                }
+                tab.model.dispose();
+            }
+
+            tabs.splice(index, 1);
+            if (activeTab === tabId) {
+                if (tabs.length) {
+                    switchToTab(tabs[Math.max(0, index - 1)].id);
+                } else {
+                    activeTab = null;
+                    if (editor) editor.setValue("");
+                }
+            }
+            renderTabs();
+        }
+
+        function renameTab(tabId, newTitle) {
+            const tab = tabs.find(t => t.id === tabId);
+            if (tab && newTitle && newTitle.trim()) {
+                tab.title = newTitle.trim();
+                renderTabs();
+            }
+        }
+
+        function renderTabs() {
+            tabsEl.querySelectorAll(".tab").forEach(t => t.remove());
+            tabs.forEach(tab => {
+                const tabEl = document.createElement("div");
+                tabEl.className = "tab" + (tab.id === activeTab ? " active" : "");
+                tabEl.innerHTML = `
+                    <span>${tab.title}</span>
+                    <span class="close" title="Close tab">×</span>
+                `;
+                
+                tabEl.querySelector('.close').onclick = e => { 
+                    e.stopPropagation(); 
+                    closeTab(tab.id); 
+                };
+                
+                tabEl.ondblclick = (e) => {
+                    if (e.target.classList.contains('close')) return;
+                    
+                    const input = document.createElement('input');
+                    input.className = 'rename-input';
+                    input.value = tab.title;
+                    input.placeholder = 'Enter tab name...';
+                    
+                    const finishRename = () => {
+                        renameTab(tab.id, input.value);
+                        input.remove();
+                    };
+                    
+                    input.onblur = finishRename;
+                    input.onkeydown = (e) => {
+                        if (e.key === 'Enter') finishRename();
+                        if (e.key === 'Escape') input.remove();
+                    };
+                    
+                    tabEl.appendChild(input);
+                    input.focus();
+                    input.select();
+                };
+                
+                tabEl.onclick = () => switchToTab(tab.id);
+                
+                tabsEl.insertBefore(tabEl, addTabBtn);
+            });
+        }
+
+        function switchToTab(tabId) {
+            if (activeTab === tabId) return;
+            activeTab = tabId;
+            
+            if (editor && typeof monaco !== 'undefined') {
+                const tab = tabs.find(t => t.id === tabId);
+                if (!tab) return;
+                
+                if (!tab.model) {
+                    tab.model = monaco.editor.createModel(tab.content || "", 'lua');
+                }
+                editor.setModel(tab.model);
+            }
+            renderTabs();
+        }
+
+        addTabBtn.onclick = () => createTab();
+
+        require(['vs/editor/editor.main'], function () {
+            monaco.editor.defineTheme('KeeperTheme', {
+                base: 'vs-dark',
+                inherit: true,
+                rules: [
+                    { token: "keyword", foreground: "dcdcaa" },
+                    { token: "string", foreground: "ce9178" },
+                    { token: "number", foreground: "b5cea8" },
+                    { token: "comment", foreground: "6a9955", fontStyle: "italic" },
+                    { token: "function", foreground: "dcdcaa" },
+                    { token: "variable", foreground: "9cdcfe" },
+                    { token: "type", foreground: "4ec9b0" },
+                    { token: "operator", foreground: "d4d4d4" },
+                    { token: "delimiter", foreground: "d4d4d4" },
+                    { token: "tag", foreground: "569cd6" },
+                ],
+                colors: {
+                    'editor.background': '#141414',
+                    'editor.foreground': '#ffffff',
+                    'editorSuggestWidget.background': '#1a1a1a',
+                    'editorSuggestWidget.foreground': '#ffffff',
+                    'editorSuggestWidget.selectedBackground': '#2a2a2a',
+                    'editorSuggestWidget.highlightForeground': '#dcdcaa',
+                    'list.hoverBackground': '#2a2a2a',
+                    'list.highlightForeground': '#dcdcaa',
+                }
+            });
+
+            // WORKING completion provider
+            monaco.languages.registerCompletionItemProvider('lua', {
+                provideCompletionItems: function(model, position, context, token) {
+                    const word = model.getWordUntilPosition(position);
+                    const range = {
+                        startLineNumber: position.lineNumber,
+                        endLineNumber: position.lineNumber,
+                        startColumn: word.startColumn,
+                        endColumn: word.endColumn
+                    };
+
+                    // Get all suggestions that match the current word
+                    const wordToComplete = word.word;
+                    let filteredSuggestions = luauSuggestions;
+                    
+                    if (wordToComplete) {
+                        filteredSuggestions = luauSuggestions.filter(suggestion => 
+                            suggestion.label.toLowerCase().includes(wordToComplete.toLowerCase())
+                        );
+                    }
+
+                    // Return all suggestions if no word, or filtered ones
+                    const suggestions = filteredSuggestions.map(suggestion => ({
+                        label: suggestion.label,
+                        kind: suggestion.kind || monaco.languages.CompletionItemKind.Function,
+                        documentation: suggestion.documentation ? { value: suggestion.documentation } : undefined,
+                        insertText: suggestion.insertText || suggestion.label,
+                        insertTextRules: suggestion.insertText ? monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet : undefined,
+                        range: range
+                    }));
+
+                    return {
+                        suggestions: suggestions,
+                        incomplete: false
+                    };
+                },
+
+                triggerCharacters: ['.', ':', '(', '"', "'"],
+                provideCompletionItemsAsync: false
+            });
+
+            // Create editor with proper suggestion settings
+            editor = monaco.editor.create(document.getElementById('container'), {
+                value: `-- Keeper
+print('Hello world!')
+
+-- Type any of these and press Ctrl+Space:
+-- 'print' - Basic print function
+-- 'game:' - Game services
+-- 'Instance.' - Instance methods  
+-- 'Vector3' - 3D vectors
+-- 'for' - Loop templates
+-- 'function' - Function templates
+
+-- Example:
+local part = Instance.new("Part")
+part.Parent = workspace
+part.Position = Vector3.new(0, 10, 0)
+
+part.Touched:Connect(function(otherPart)
+    print("Touched by:", otherPart.Name)
+end)`,
+                language: 'lua',
+                theme: 'KeeperTheme',
+                minimap: { enabled: false },
+                fontSize: 14,
+                fontFamily: "Consolas, 'Cascadia Code', 'Fira Code', monospace",
+                lineNumbers: 'on',
+                roundedSelection: true,
+                scrollBeyondLastLine: false,
+                automaticLayout: true,
+                suggestOnTriggerCharacters: true,
+                quickSuggestions: true,
+                parameterHints: { enabled: true },
+                wordBasedSuggestions: true,
+                occurrencesHighlight: true,
+                renderLineHighlight: 'all',
+                cursorBlinking: 'smooth',
+                cursorSmoothCaretAnimation: 'on',
+                smoothScrolling: true,
+                mouseWheelZoom: true,
+                dragAndDrop: true,
+                folding: true,
+            });
+
+            // Create initial tabs
+            createTab("main.luau", `print('Welcome to Keeper Luau Editor!')`);
+
+            createTab("print.luau", `-- Example
+print("Hello world!")`);
+
+            window.addEventListener('resize', () => {
+                if (editor) editor.layout();
+            });
+
+            // Smart character animation system
+            editor.onDidChangeModelContent((e) => {
+                if (e.changes.length > 0) {
+                    const change = e.changes[0];
+                    const isInsert = change.text.length > 0;
+                    const isDelete = change.rangeLength > 0 && change.text === '';
+                    
+                    if (isInsert || isDelete) {
+                        const lineNumber = change.range.startLineNumber;
+                        const column = change.range.startColumn;
+                        animateCharacter(lineNumber, column, isInsert);
+                    }
+                }
+            });
+
+            function animateCharacter(lineNumber, column, isInsert) {
+                setTimeout(() => {
+                    const viewLines = document.querySelector('.monaco-editor .view-lines');
+                    if (!viewLines) return;
+                    
+                    const line = viewLines.querySelector(`[data-line-number="${lineNumber}"]`);
+                    if (!line) return;
+                    
+                    const spans = line.querySelectorAll('span');
+                    let charSpan = null;
+                    let currentCol = 0;
+                    
+                    for (const span of spans) {
+                        const textLength = span.textContent.length;
+                        currentCol += textLength;
+                        
+                        if (currentCol >= column) {
+                            charSpan = span;
+                            break;
+                        }
+                    }
+                    
+                    if (charSpan) {
+                        const animationClass = isInsert ? 'char-animation' : 'char-delete-animation';
+                        charSpan.classList.add(animationClass);
+                        
+                        setTimeout(() => {
+                            charSpan.classList.remove(animationClass);
+                        }, 150);
+                    }
+                }, 10);
+            }
+
+            // Cursor movement animation
+            editor.onDidChangeCursorPosition(() => {
+                const cursor = document.querySelector('.monaco-editor .cursors-layer .cursor');
+                if (cursor) {
+                    cursor.style.transform = 'scale(1.15)';
+                    setTimeout(() => {
+                        cursor.style.transform = 'scale(1)';
+                    }, 120);
+                }
+            });
+
+            window.GetText = function() {
+                return editor.getValue();
+            };
+
+            window.SetText = function(text) {
+                editor.setValue(text);
+            };
+
+            window.AddSuggestion = function(label, insertText, detail, documentation) {
+                luauSuggestions.push({
+                    label: label,
+                    insertText: insertText,
+                    documentation: documentation,
+                    kind: monaco.languages.CompletionItemKind.Function
+                });
+            };
+        });
+    </script>
+</body>
+</html>
